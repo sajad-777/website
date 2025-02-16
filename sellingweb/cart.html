@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cart</title>
+    <link rel="stylesheet" href="navbar.css">
+    <link rel="stylesheet" href="product.css">
+</head>
+<body>
+    <div id="navbar-placeholder"></div>
+    <div class="product">
+        <h1>Your Cart</h1>
+        <div id="cart-container" class="product-grid"></div>
+        <button id="checkout-btn" class="checkout-btn">Proceed to Checkout</button>
+        <button onclick="clearCart()" class="clear-cart-btn">Clear Cart</button>
+    </div>
+
+    <script>
+        // Fetch and inject the navbar
+        fetch("navbar.html")
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById("navbar-placeholder").innerHTML = data;
+            });
+
+        // Load and display cart items
+        function loadCart() {
+            const cart = JSON.parse(localStorage.getItem('cart')) || [];
+            const cartContainer = document.getElementById('cart-container');
+
+            if (cart.length === 0) {
+                cartContainer.textContent = 'Your cart is empty.';
+                return;
+            }
+
+            cart.forEach(item => {
+                const cartItem = document.createElement('div');
+                cartItem.classList.add('card');
+                cartItem.innerHTML = `
+                    <img src="${item.imageUrl}" alt="${item.name}" class="card-img"/>
+                    <div class="card-content">
+                        <h2>${item.name}</h2>
+                        <p>Price: $${item.price}</p>
+                    </div>
+                `;
+                cartContainer.appendChild(cartItem);
+            });
+        }
+
+        loadCart();
+
+        // Checkout button
+        document.getElementById("checkout-btn").addEventListener("click", () => {
+            alert("Proceeding to checkout...");
+        });
+
+        function clearCart() {
+            localStorage.removeItem('cart');
+            alert('Cart has been cleared!');
+            location.reload();
+        }
+    </script>
+
+    <style>
+        /* Example styles */
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            text-align: center;
+        }
+
+        .card-img {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+
+        .card-content {
+            margin-top: 10px;
+        }
+
+        .checkout-btn, .clear-cart-btn {
+            display: block;
+            margin: 10px auto;
+            padding: 10px 20px;
+            background-color: blue;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .clear-cart-btn {
+            background-color: red;
+        }
+    </style>
+</body>
+</html>
