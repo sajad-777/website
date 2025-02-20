@@ -12,22 +12,21 @@
     <div class="product">
         <h1>Your Cart</h1>
         <div id="cart-container" class="product-grid"></div>
-        <button id="checkout-btn" class="checkout-btn">Proceed to Checkout</button>
-        <button onclick="clearCart()" class="clear-cart-btn">Clear Cart</button>
     </div>
 
     <script>
-        // Fetch and inject the navbar
+        // ✅ Load Navbar
         fetch("navbar.html")
             .then(response => response.text())
             .then(data => {
                 document.getElementById("navbar-placeholder").innerHTML = data;
             });
 
-        // Load and display cart items
+        // ✅ Load and Display Cart Items
         function loadCart() {
             const cart = JSON.parse(localStorage.getItem('cart')) || [];
             const cartContainer = document.getElementById('cart-container');
+            cartContainer.innerHTML = "";
 
             if (cart.length === 0) {
                 cartContainer.textContent = 'Your cart is empty.';
@@ -42,28 +41,116 @@
                     <div class="card-content">
                         <h2>${item.name}</h2>
                         <p>Price: $${item.price}</p>
+                        <div class="product-quantity-container">
+                            <button class="quantity-btn" onclick="decreaseQuantity(${item.id})">-</button>
+                            <span id="quantity-${item.id}" class="quantity-display">1</span>
+                            <button class="quantity-btn" onclick="increaseQuantity(${item.id})">+</button>
+                        </div>
+                        <button class="buy-now-btn" onclick='buyNow(${JSON.stringify(item)})'>Buy Now</button>
+                        <button class="remove-btn" onclick='removeFromCart(${JSON.stringify(item)})'>Remove</button>
                     </div>
                 `;
                 cartContainer.appendChild(cartItem);
             });
         }
 
-        loadCart();
+        // ✅ Increase Quantity
+        function increaseQuantity(productId) {
+            const quantityDisplay = document.getElementById(`quantity-${productId}`);
+            let quantity = parseInt(quantityDisplay.textContent);
+            quantity++;
+            quantityDisplay.textContent = quantity;
+        }
 
-        // Checkout button
-        document.getElementById("checkout-btn").addEventListener("click", () => {
-            alert("Proceeding to checkout...");
-        });
+        // ✅ Decrease Quantity
+        function decreaseQuantity(productId) {
+            const quantityDisplay = document.getElementById(`quantity-${productId}`);
+            let quantity = parseInt(quantityDisplay.textContent);
+            if (quantity > 1) {
+                quantity--;
+                quantityDisplay.textContent = quantity;
+            }
+        }
 
-        function clearCart() {
-            localStorage.removeItem('cart');
-            alert('Cart has been cleared!');
+        // ✅ Buy Now Function - Fixed
+        function buyNow(item) {
+            const quantity = parseInt(document.getElementById(`quantity-${item.id}`).textContent);
+            const amount = item.price * quantity; // ✅ Fix: Calculate total price
+
+            const upiID = "9895311851@paytm";  // Replace with actual UPI ID
+            const upiURL = `upi://pay?pa=${upiID}&pn=E-Store&am=${amount}&cu=INR&tn=Buying ${encodeURIComponent(item.name)}`;
+
+            // ✅ Show Payment Form with QR Code
+            showUPIPaymentForm(upiURL, item.name);
+        }
+
+        // ✅ Show UPI Payment Form
+        function showUPIPaymentForm(upiURL, productName) {
+            const existingQR = document.getElementById("qr-container");
+            if (existingQR) existingQR.remove();
+
+            const qrContainer = document.createElement("div");
+            qrContainer.id = "qr-container";
+            qrContainer.style.position = "fixed";
+            qrContainer.style.top = "50%";
+            qrContainer.style.left = "50%";
+            qrContainer.style.transform = "translate(-50%, -50%)";
+            qrContainer.style.backgroundColor = "#fff";
+            qrContainer.style.padding = "20px";
+            qrContainer.style.border = "1px solid #ccc";
+            qrContainer.style.zIndex = "1000";
+            qrContainer.style.textAlign = "center";
+
+            qrContainer.innerHTML = `
+                <h3>Scan to Pay</h3>
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiURL)}" alt="UPI QR Code">
+                <p>After payment, enter your UPI Transaction ID.</p>
+
+                <input type="text" id="payment-id" placeholder="Enter UPI Transaction ID">
+                <br><br>
+                <label for="payment-screenshot">Upload Payment Screenshot:</label>
+                <input type="file" id="payment-screenshot" accept="image/*">
+                <br><br>
+                <button onclick="verifyManualPayment('${productName}')">Verify Payment</button>
+                <button onclick="document.getElementById('qr-container').remove()">Cancel</button>
+            `;
+
+            document.body.appendChild(qrContainer);
+        }
+
+        // ✅ Verify Manual Payment
+        function verifyManualPayment(productName) {
+            const paymentId = document.getElementById("payment-id").value.trim();
+            const screenshot = document.getElementById("payment-screenshot").files[0];
+
+            if (!paymentId) {
+                alert("Please enter your UPI Transaction ID.");
+                return;
+            }
+
+            if (!screenshot) {
+                alert("Please upload a payment screenshot.");
+                return;
+            }
+
+            alert(`Your payment for ${productName} is under verification. We will confirm soon!`);
+            document.getElementById('qr-container').remove();
+        }
+
+        // ✅ Remove Item from Cart
+        function removeFromCart(product) {
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            cart = cart.filter(item => item.id !== product.id);
+            localStorage.setItem('cart', JSON.stringify(cart));
+            alert(`${product.name} removed from cart!`);
             location.reload();
         }
+
+        // ✅ Load Cart on Page Load
+        loadCart();
     </script>
 
     <style>
-        /* Example styles */
         .product-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -88,18 +175,28 @@
             margin-top: 10px;
         }
 
-        .checkout-btn, .clear-cart-btn {
+        .quantity-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .buy-now-btn, .remove-btn {
             display: block;
             margin: 10px auto;
             padding: 10px 20px;
-            background-color: blue;
+            background-color: rgb(42, 6, 244);
             color: white;
             border: none;
             cursor: pointer;
             border-radius: 5px;
         }
 
-        .clear-cart-btn {
+        .remove-btn {
             background-color: red;
         }
     </style>
